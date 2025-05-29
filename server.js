@@ -1,4 +1,6 @@
+// Load environment variables from .env file as soon as possible
 require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -10,15 +12,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// Connect to MongoDB using the connection string from .env
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ Failed to connect to MongoDB:', err));
 
-// MongoDB User Schema
+// Define user schema and model
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -27,7 +26,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Registration Route
+// Registration route
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -51,7 +50,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login Route
+// Login route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -76,7 +75,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Start the server
+// Start the server on the port from .env or default 10000
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
