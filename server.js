@@ -1,4 +1,3 @@
-// Load environment variables from .env file as soon as possible
 require('dotenv').config();
 
 const express = require('express');
@@ -12,21 +11,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB using the connection string from .env
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ Failed to connect to MongoDB:', err));
 
-// Define user schema and model
+// User schema & model
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
-
 const User = mongoose.model('User', userSchema);
 
-// Registration route
+// Register route
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -46,7 +44,8 @@ app.post('/register', async (req, res) => {
 
     res.status(201).json({ message: 'Registration successful!' });
   } catch (error) {
-    res.status(500).json({ message: 'Error registering user.' });
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Error registering user.', error: error.message });
   }
 });
 
@@ -61,7 +60,7 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'User not found.' });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -71,11 +70,12 @@ app.post('/login', async (req, res) => {
 
     res.json({ message: 'Login successful!', user });
   } catch (error) {
-    res.status(500).json({ message: 'Error logging in user.' });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error logging in user.', error: error.message });
   }
 });
 
-// Start the server on the port from .env or default 10000
+// Start server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
