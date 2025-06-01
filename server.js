@@ -7,25 +7,9 @@ const cors = require('cors');
 
 const app = express();
 
-// ✅ Define allowed origins for CORS
-const allowedOrigins = [
-  'http://localhost:3000', // local React app
-  'https://your-frontend-domain.com' // production frontend (update this)
-];
 
-// ✅ Use CORS with custom origin check
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow no-origin (e.g. Postman/curl)
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy does not allow access from this origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
 
+app.cors(cors());
 app.use(express.json());
 
 // ✅ MongoDB connection
@@ -44,16 +28,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// ✅ Job schema and model
-const jobSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  company: { type: String, required: true },
-  description: { type: String },
-  location: { type: String },
-  salary: { type: String },
-  datePosted: { type: Date, default: Date.now }
-});
-const Job = mongoose.model('Job', jobSchema);
+
 
 // ✅ Register route
 app.post('/register', async (req, res) => {
