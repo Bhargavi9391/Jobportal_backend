@@ -7,14 +7,18 @@ const cors = require('cors');
 
 const app = express();
 
+// ✅ Define allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:3000', // local React app
+  'https://your-frontend-domain.com' // production frontend (update this)
+];
 
-
+// ✅ Use CORS with custom origin check
 app.use(cors({
-  origin: function(origin, callback){
-    // Allow requests with no origin like mobile apps or curl
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow no-origin (e.g. Postman/curl)
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy does not allow access from this origin.';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
@@ -24,31 +28,34 @@ app.use(cors({
 
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ Failed to connect to MongoDB:', err));
+// ✅ MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
-// User schema & model
+// ✅ User schema and model
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true }
 });
 const User = mongoose.model('User', userSchema);
 
-// Job schema & model
+// ✅ Job schema and model
 const jobSchema = new mongoose.Schema({
   title: { type: String, required: true },
   company: { type: String, required: true },
   description: { type: String },
   location: { type: String },
   salary: { type: String },
-  datePosted: { type: Date, default: Date.now },
+  datePosted: { type: Date, default: Date.now }
 });
 const Job = mongoose.model('Job', jobSchema);
 
-// Register route
+// ✅ Register route
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -73,7 +80,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login route
+// ✅ Login route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -92,15 +99,17 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials.' });
     }
 
-    res.json({ message: 'Login successful!', user: { id: user._id, name: user.name, email: user.email } });
+    res.json({
+      message: 'Login successful!',
+      user: { id: user._id, name: user.name, email: user.email }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Error logging in user.', error: error.message });
   }
 });
 
-
-// Start server
+// ✅ Start server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
