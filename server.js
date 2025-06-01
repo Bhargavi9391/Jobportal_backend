@@ -7,11 +7,7 @@ const cors = require('cors');
 
 const app = express();
 
-// Middleware: Allow CORS for both deployed frontend and localhost for testing
-const allowedOrigins = [
-  "https://job-portal-front-o561.onrender.com",
-  "http://localhost:3000"
-];
+
 
 app.use(cors({
   origin: function(origin, callback){
@@ -103,22 +99,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Job posting route
-app.post('/api/jobs', async (req, res) => {
-  try {
-    const jobData = req.body;
-    if (!jobData.title || !jobData.company) {
-      return res.status(400).json({ message: 'Job title and company are required.' });
-    }
-
-    const newJob = new Job(jobData);
-    await newJob.save();
-    res.status(201).json({ message: 'Job posted successfully!', jobId: newJob._id });
-  } catch (error) {
-    console.error('Error saving job:', error);
-    res.status(500).json({ message: 'Error saving job.', error: error.message });
-  }
-});
 
 // Start server
 const PORT = process.env.PORT || 10000;
