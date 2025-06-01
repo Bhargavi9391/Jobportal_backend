@@ -24,6 +24,17 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+// Job schema & model
+const jobSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  company: { type: String, required: true },
+  description: { type: String },
+  location: { type: String },
+  salary: { type: String },
+  datePosted: { type: Date, default: Date.now },
+});
+const Job = mongoose.model('Job', jobSchema);
+
 // Register route
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -68,10 +79,27 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials.' });
     }
 
-    res.json({ message: 'Login successful!', user });
+    res.json({ message: 'Login successful!', user: { id: user._id, name: user.name, email: user.email } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Error logging in user.', error: error.message });
+  }
+});
+
+// Job posting route
+app.post('/api/jobs', async (req, res) => {
+  try {
+    const jobData = req.body;
+    if (!jobData.title || !jobData.company) {
+      return res.status(400).json({ message: 'Job title and company are required.' });
+    }
+
+    const newJob = new Job(jobData);
+    await newJob.save();
+    res.status(201).json({ message: 'Job posted successfully!', jobId: newJob._id });
+  } catch (error) {
+    console.error('Error saving job:', error);
+    res.status(500).json({ message: 'Error saving job.', error: error.message });
   }
 });
 
