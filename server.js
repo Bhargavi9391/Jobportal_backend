@@ -11,7 +11,6 @@ const Job = require('./models/Job');
 const corsOptions = {
   origin: [
     "https://frontend-jobportal-wt9b.onrender.com",
-    "https://job-portal-front-o561.onrender.com"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
