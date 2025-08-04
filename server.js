@@ -1,23 +1,21 @@
 require('dotenv').config();
 const express = require('express');
-const router = express.Router();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
-const User = require("../models/User");
-const app = express();
-
+const User = require("./models/User");  // ✅ Already imported here
 const Job = require('./models/Job');
 
-// ✅ CORS Setup (Only One Block)
+const app = express();
+
+// ✅ CORS Setup
 const corsOptions = {
   origin: [
-    "https://frontend-jobportal-wt9b.onrender.com",
+    "https://frontend-jobportal-wt9b.onrender.com",  // ✅ Your frontend URL
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 };
-
 app.use(cors(corsOptions));
 
 // ✅ Middlewares
@@ -31,28 +29,18 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ Failed to connect to MongoDB:', err));
 
-// ✅ User Schema
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-
-const User = mongoose.model('User', userSchema);
-
-
-router.post("/register", async (req, res) => {
+// ✅ Register Route
+app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Save new user
-    const newUser = new User({ name, email, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
 
     res.status(201).json({ message: "User registered successfully", user: newUser });
