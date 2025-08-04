@@ -11,7 +11,7 @@ const Job = require('./models/Job');
 
 // ✅ CORS setup
 const allowedOrigins = {
-  // origin: "https://job-portal-front-o561.onrender.com",
+  origin: "https://frontend-jobportal-wt9b.onrender.com",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 };
