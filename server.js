@@ -5,15 +5,16 @@ const bcrypt = require('bcryptjs');
 const cors = require('cors');
 
 const app = express();
-<<<<<<< HEAD
+
 const Job = require('./models/Job');
 
 
 // ✅ CORS setup
-const allowedOrigins = [
-  "http://localhost:3000"
-  // "https://job-portal-front-o561.onrender.com"
-];
+const allowedOrigins = {
+  // origin: "https://job-portal-front-o561.onrender.com",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+};
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -26,7 +27,7 @@ app.use(cors({
 }));
 
 // ✅ Middleware
-=======
+
 const corsOptions = {
   origin: "https://job-portal-front-o561.onrender.com",
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -35,7 +36,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
->>>>>>> 1c28a9baeadfc1328d97389bd0ebba253000dab4
+
 app.use(express.json());
 
 // ✅ MongoDB connection
