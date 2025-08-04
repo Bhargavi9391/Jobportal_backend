@@ -29,10 +29,16 @@ app.use(cors({
 // ✅ Middleware
 
 const corsOptions = {
-  origin: "https://job-portal-front-o561.onrender.com",
+  origin: [
+    "https://frontend-jobportal-wt9b.onrender.com",
+    "https://job-portal-front-o561.onrender.com"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  credentials: true
 };
+
+app.use(cors(corsOptions));
+
 
 // Middleware
 app.use(cors(corsOptions));
