@@ -13,8 +13,8 @@ const jobSchema = new mongoose.Schema({
   salary: String,
   postedTime: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
 module.exports = mongoose.model('Job', jobSchema);
