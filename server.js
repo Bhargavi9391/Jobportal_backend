@@ -72,15 +72,19 @@ app.post('/reset-password', async (req, res) => {
 });
 
 // ✅ Post Job
+// ✅ Post Job
 app.post('/jobs', async (req, res) => {
   try {
+    console.log("📥 Received job data:", req.body);  // Debug this
     const job = new Job(req.body);
     await job.save();
     res.status(201).json({ message: "Job posted successfully!" });
   } catch (err) {
+    console.error("❌ Error posting job:", err.message);  // Log error message
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
+
 
 // ✅ Get All Jobs
 app.get('/jobs', async (req, res) => {
