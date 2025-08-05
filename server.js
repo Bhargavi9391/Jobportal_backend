@@ -85,6 +85,25 @@ app.post('/jobs', async (req, res) => {
     res.status(500).json({ message: 'Error posting job', error: error.message });
   }
 });
+app.post('/reset-password', async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ message: "Password reset failed", error });
+  }
+});
 
 // ✅ Get All Jobs Route
 app.get('/jobs', async (req, res) => {
