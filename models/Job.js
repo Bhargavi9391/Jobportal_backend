@@ -1,5 +1,4 @@
-// models/Job.js
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const jobSchema = new mongoose.Schema({
   position: String,
@@ -8,11 +7,14 @@ const jobSchema = new mongoose.Schema({
   workType: String,
   skills: [String],
   education: String,
+  expectedYear: String,
   description: String,
-  vacancies: Number,
+  vacancies: String,
   salary: String,
-  expectedYear: Number,
-  postedTime: Date,
+  postedTime: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model("Job", jobSchema);
+module.exports = mongoose.model('Job', jobSchema);
