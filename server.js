@@ -8,10 +8,10 @@ const Job = require('./models/Job');
 
 const app = express();
 
-// ✅ CORS Setup
+// ✅ CORS Setup (allow frontend)
 const corsOptions = {
   origin: [
-    "https://frontend-jobportal-wt9b.onrender.com",
+    "https://frontend-jobportal-wt9b.onrender.com", // ✅ your deployed frontend URL
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
@@ -26,10 +26,8 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ Failed to connect to MongoDB:', err));
-
-// ❌ Removed Register Route
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => console.error('❌ Failed to connect to MongoDB:', err));
 
 // ✅ Login Route
 app.post('/login', async (req, res) => {
@@ -56,24 +54,12 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Post Job Route
-app.post('/jobs', async (req, res) => {
-  try {
-    const job = new Job(req.body);
-    await job.save();
-    res.status(201).json({ message: 'Job posted successfully!' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error posting job', error: error.message });
-  }
-});
-
 // ✅ Reset Password Route
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
   try {
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -88,6 +74,17 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
+// ✅ Post Job Route
+app.post('/jobs', async (req, res) => {
+  try {
+    const job = new Job(req.body);
+    await job.save();
+    res.status(201).json({ message: 'Job posted successfully!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error posting job', error: error.message });
+  }
+});
+
 // ✅ Get All Jobs Route
 app.get('/jobs', async (req, res) => {
   try {
@@ -95,6 +92,16 @@ app.get('/jobs', async (req, res) => {
     res.json(jobs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching jobs', error: error.message });
+  }
+});
+
+// ✅ Delete Job by ID Route
+app.delete('/jobs/:id', async (req, res) => {
+  try {
+    await Job.findByIdAndDelete(req.params.id);
+    res.json({ message: "Job deleted successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting job", error: error.message });
   }
 });
 
