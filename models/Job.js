@@ -7,7 +7,10 @@ const jobSchema = new mongoose.Schema({
   workType: String,
   skills: [String],
   education: String,
-  expectedYear: String,
+  expectedYear: {
+    type: String,
+    required: false  // ✅ Made optional to avoid 500 error
+  },
   description: String,
   vacancies: String,
   salary: String,
