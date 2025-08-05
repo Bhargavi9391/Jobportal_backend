@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
-const User = require("./models/User");  // ✅ Already imported here
+const User = require("./models/User");  
 const Job = require('./models/Job');
 
 const app = express();
