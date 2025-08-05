@@ -74,7 +74,7 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
-// ✅ Post Job Route
+// Post job route
 app.post('/jobs', async (req, res) => {
   try {
     const job = new Job(req.body);
@@ -85,7 +85,7 @@ app.post('/jobs', async (req, res) => {
   }
 });
 
-// ✅ Get All Jobs Route
+// Get all jobs route
 app.get('/jobs', async (req, res) => {
   try {
     const jobs = await Job.find({});
@@ -94,6 +94,7 @@ app.get('/jobs', async (req, res) => {
     res.status(500).json({ message: 'Error fetching jobs', error: error.message });
   }
 });
+
 
 // ✅ Delete Job by ID Route
 app.delete('/jobs/:id', async (req, res) => {
