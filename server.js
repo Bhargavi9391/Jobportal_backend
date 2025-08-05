@@ -1,108 +1,104 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const cors = require('cors');
-const User = require("./models/User");
+const bcrypt = require('bcryptjs');
+const User = require('./models/User');
 const Job = require('./models/Job');
 
 const app = express();
 
-// ✅ CORS Setup (allow frontend)
+// ✅ CORS Setup
 const corsOptions = {
   origin: [
-    "https://frontend-jobportal-wt9b.onrender.com", // ✅ your deployed frontend URL
+    "https://frontend-jobportal-wt9b.onrender.com",  // ✅ your deployed frontend
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 };
 app.use(cors(corsOptions));
 
-// ✅ Middlewares
+// ✅ Middleware
 app.use(express.json());
 
 // ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch(err => console.error('❌ Failed to connect to MongoDB:', err));
+}).then(() => {
+  console.log("✅ Connected to MongoDB");
+}).catch((err) => {
+  console.error("❌ MongoDB connection error:", err.message);
+});
 
 // ✅ Login Route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
+  if (!email || !password)
     return res.status(400).json({ message: 'Please provide both email and password.' });
-  }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user)
       return res.status(404).json({ message: 'User not found.' });
-    }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid)
       return res.status(400).json({ message: 'Invalid credentials.' });
-    }
 
     res.json({ message: 'Login successful!', user });
-  } catch (error) {
-    res.status(500).json({ message: 'Error logging in user.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error logging in.', error: err.message });
   }
 });
 
-// ✅ Reset Password Route
+// ✅ Reset Password
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user)
+      return res.status(404).json({ message: 'User not found.' });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.status(200).json({ message: "Password reset successful" });
-  } catch (error) {
-    res.status(500).json({ message: "Password reset failed", error });
+    res.json({ message: 'Password reset successful.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Password reset failed.', error: err.message });
   }
 });
 
-// Post job route
+// ✅ Post Job
 app.post('/jobs', async (req, res) => {
   try {
     const job = new Job(req.body);
     await job.save();
-    res.status(201).json({ message: 'Job posted successfully!' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error posting job', error: error.message });
+    res.status(201).json({ message: "Job posted successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
 
-// Get all jobs route
+// ✅ Get All Jobs
 app.get('/jobs', async (req, res) => {
   try {
     const jobs = await Job.find({});
     res.json(jobs);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching jobs', error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching jobs.", error: err.message });
   }
 });
 
-
-// ✅ Delete Job by ID Route
+// ✅ Delete Job by ID
 app.delete('/jobs/:id', async (req, res) => {
   try {
     await Job.findByIdAndDelete(req.params.id);
     res.json({ message: "Job deleted successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting job", error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting job.", error: err.message });
   }
 });
 
