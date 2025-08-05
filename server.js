@@ -11,7 +11,7 @@ const app = express();
 // ✅ CORS Setup
 const corsOptions = {
   origin: [
-    "https://frontend-jobportal-wt9b.onrender.com",  // ✅ Your frontend URL
+    "https://frontend-jobportal-wt9b.onrender.com",  
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
