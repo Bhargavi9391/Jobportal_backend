@@ -1,3 +1,4 @@
+// models/Job.js
 const mongoose = require('mongoose');
 
 const jobSchema = new mongoose.Schema({
@@ -5,12 +6,8 @@ const jobSchema = new mongoose.Schema({
   company: String,
   location: String,
   workType: String,
-  skills: [String],
-  education: String,
-  expectedYear: {
-    type: String,
-    required: false  
-  },
+  skills: [String], 
+  expectedYear: String,
   description: String,
   vacancies: String,
   salary: String,
