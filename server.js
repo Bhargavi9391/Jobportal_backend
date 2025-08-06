@@ -8,16 +8,15 @@ const Job = require('./models/Job');
 
 const app = express();
 
-
 app.use(cors({
   origin: "https://frontend-jobportal-wt9b.onrender.com",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: false  
+  credentials: false
 }));
 
 app.use(express.json());
 
-
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -27,9 +26,9 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ MongoDB connection error:", err.message);
 });
 
+// Login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   if (!email || !password)
     return res.status(400).json({ message: 'Please provide both email and password.' });
 
@@ -48,6 +47,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Reset Password
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
@@ -65,21 +65,54 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
+// Post Job
 app.post('/jobs', async (req, res) => {
   try {
     console.log("📥 Received job data:", req.body);
-    const job = new Job(req.body);
+
+    const {
+      position,
+      company,
+      location,
+      workType,
+      expectedYear,
+      description,
+      vacancies,
+      salary,
+      postedTime,
+      skills,
+      education
+    } = req.body;
+
+    if (!position || !company) {
+      return res.status(400).json({ message: "Position and Company are required." });
+    }
+
+    const job = new Job({
+      position,
+      company,
+      location,
+      workType,
+      expectedYear,
+      description,
+      vacancies,
+      salary,
+      postedTime: postedTime || new Date(),
+      skills,
+      education
+    });
+
     await job.save();
     res.status(201).json({ message: "Job posted successfully!" });
+
   } catch (err) {
-    console.error("❌ Error posting job:", err.message); 
-    console.error("❌ Stack:", err.stack);             
+    console.error("❌ Error posting job:", err.message);
+    console.error(err.stack);
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
 
-
-
+// Get Jobs
 app.get('/jobs', async (req, res) => {
   try {
     const jobs = await Job.find({});
@@ -89,7 +122,7 @@ app.get('/jobs', async (req, res) => {
   }
 });
 
-
+// Delete Job
 app.delete('/jobs/:id', async (req, res) => {
   try {
     await Job.findByIdAndDelete(req.params.id);
@@ -99,6 +132,7 @@ app.delete('/jobs/:id', async (req, res) => {
   }
 });
 
+// Start Server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
