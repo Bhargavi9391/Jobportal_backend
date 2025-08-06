@@ -8,15 +8,12 @@ const Job = require('./models/Job');
 
 const app = express();
 
-// ✅ CORS Setup
-const corsOptions = {
-  origin: [
-    "https://frontend-jobportal-wt9b.onrender.com",  // ✅ your deployed frontend
-  ],
+// ✅ Corrected CORS Setup
+app.use(cors({
+  origin: "https://frontend-jobportal-wt9b.onrender.com",  // ✅ your frontend
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-};
-app.use(cors(corsOptions));
+  credentials: false  // ❌ Set to false unless you use cookies/auth
+}));
 
 // ✅ Middleware
 app.use(express.json());
@@ -71,6 +68,7 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
+// ✅ Post Job
 app.post('/jobs', async (req, res) => {
   try {
     console.log("📥 Received job data:", req.body);
@@ -78,12 +76,10 @@ app.post('/jobs', async (req, res) => {
     await job.save();
     res.status(201).json({ message: "Job posted successfully!" });
   } catch (err) {
-    console.error("❌ Error posting job:", err.message); // log error
+    console.error("❌ Error posting job:", err.message);
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
-
-
 
 // ✅ Get All Jobs
 app.get('/jobs', async (req, res) => {
