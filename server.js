@@ -84,10 +84,6 @@ app.post('/jobs', async (req, res) => {
       education
     } = req.body;
 
-    if (!position || !company) {
-      return res.status(400).json({ message: "Position and Company are required." });
-    }
-
     const job = new Job({
       position,
       company,
@@ -101,17 +97,18 @@ app.post('/jobs', async (req, res) => {
       skills,
       education
     });
-    console.log("✅ Final job object to save:", job);
+
+    console.log("✅ Job to be saved:", job);
 
     await job.save();
-    res.status(201).json({ message: "Job posted successfully!" });
 
+    res.status(201).json({ message: "Job posted successfully!" });
   } catch (err) {
     console.error("❌ Error posting job:", err.message);
-    console.error(err.stack);
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
+
 
 // Get Jobs
 app.get('/jobs', async (req, res) => {
