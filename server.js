@@ -101,6 +101,7 @@ app.post('/jobs', async (req, res) => {
       skills,
       education
     });
+    console.log("✅ Final job object to save:", job);
 
     await job.save();
     res.status(201).json({ message: "Job posted successfully!" });
