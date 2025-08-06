@@ -8,17 +8,16 @@ const Job = require('./models/Job');
 
 const app = express();
 
-// ✅ Corrected CORS Setup
+
 app.use(cors({
-  origin: "https://frontend-jobportal-wt9b.onrender.com",  // ✅ your frontend
+  origin: "https://frontend-jobportal-wt9b.onrender.com",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: false  // ❌ Set to false unless you use cookies/auth
+  credentials: false  
 }));
 
-// ✅ Middleware
 app.use(express.json());
 
-// ✅ MongoDB Connection
+
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -28,7 +27,6 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ MongoDB connection error:", err.message);
 });
 
-// ✅ Login Route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -50,7 +48,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Reset Password
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
@@ -68,7 +65,6 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
-// ✅ Post Job
 app.post('/jobs', async (req, res) => {
   try {
     console.log("📥 Received job data:", req.body);
@@ -76,12 +72,14 @@ app.post('/jobs', async (req, res) => {
     await job.save();
     res.status(201).json({ message: "Job posted successfully!" });
   } catch (err) {
-    console.error("❌ Error posting job:", err.message);
+    console.error("❌ Error posting job:", err.message); 
+    console.error("❌ Stack:", err.stack);             
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
 
-// ✅ Get All Jobs
+
+
 app.get('/jobs', async (req, res) => {
   try {
     const jobs = await Job.find({});
@@ -91,7 +89,7 @@ app.get('/jobs', async (req, res) => {
   }
 });
 
-// ✅ Delete Job by ID
+
 app.delete('/jobs/:id', async (req, res) => {
   try {
     await Job.findByIdAndDelete(req.params.id);
@@ -101,7 +99,6 @@ app.delete('/jobs/:id', async (req, res) => {
   }
 });
 
-// ✅ Start Server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
