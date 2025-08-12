@@ -9,10 +9,13 @@ const Job = require('./models/Job');
 const app = express();
 
 app.use(cors({
-  origin: "https://frontend-jobportal-wt9b.onrender.com",
+  origin: [
+    "https://frontend-jobportal-wt9b.onrender.com",
+    "http://localhost:3000"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: false
 }));
+
 
 app.use(express.json());
 
@@ -101,8 +104,7 @@ app.post('/jobs', async (req, res) => {
     console.log("✅ Job to be saved:", job);
 
     await job.save();
-
-    res.status(201).json({ message: "Job posted successfully!" });
+res.status(201).json({ message: "Job posted successfully!", job });
   } catch (err) {
     console.error("❌ Error posting job:", err.message);
     res.status(500).json({ message: "Error posting job.", error: err.message });
