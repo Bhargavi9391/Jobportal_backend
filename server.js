@@ -8,6 +8,7 @@ const Job = require('./models/Job');
 
 const app = express();
 
+// ✅ CORS settings
 app.use(cors({
   origin: [
     "https://frontend-jobportal-wt9b.onrender.com",
@@ -16,18 +17,17 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 
-
 app.use(express.json());
 
-// MongoDB Connection
+// ✅ MongoDB Connection (only once)
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => {
-  console.log("✅ Connected to MongoDB");
-}).catch((err) => {
-  console.error("❌ MongoDB connection error:", err.message);
-});
+})
+.then(() => console.log("✅ Connected to MongoDB"))
+.catch((err) => console.error("❌ MongoDB connection error:", err.message));
+
+// ===================== Routes =====================
 
 // Login
 app.post('/login', async (req, res) => {
@@ -71,8 +71,6 @@ app.post('/reset-password', async (req, res) => {
 // Post Job
 app.post('/jobs', async (req, res) => {
   try {
-    console.log("📥 Received job data:", req.body);
-
     const {
       position,
       company,
@@ -101,16 +99,12 @@ app.post('/jobs', async (req, res) => {
       education
     });
 
-    console.log("✅ Job to be saved:", job);
-
     await job.save();
-res.status(201).json({ message: "Job posted successfully!", job });
+    res.status(201).json({ message: "Job posted successfully!", job });
   } catch (err) {
-    console.error("❌ Error posting job:", err.message);
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
-
 
 // Get Jobs
 app.get('/jobs', async (req, res) => {
@@ -135,5 +129,5 @@ app.delete('/jobs/:id', async (req, res) => {
 // Start Server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
