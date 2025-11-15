@@ -11,24 +11,22 @@ const app = express();
 // ✅ CORS settings
 const allowedOrigins = [
   "https://frontend-jobportal-wt9b.onrender.com", // deployed frontend
-  "http://localhost:3000" // local frontend for testing
+  "http://localhost:3000" // local frontend
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // allow requests with no origin like Postman
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-};
+  credentials: true
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight requests
+app.options("*", cors()); // preflight
 
 app.use(express.json());
 
@@ -37,12 +35,11 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
-// ===================== Routes =====================
+// ================= Routes ==================
 
 // Register
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
-
   if (!name || !email || !password)
     return res.status(400).json({ message: "All fields are required." });
 
@@ -52,17 +49,10 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ message: "Email already registered." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      isAdmin: false
-    });
-
+    const newUser = new User({ name, email, password: hashedPassword, isAdmin: false });
     await newUser.save();
-    console.log("✅ New user saved:", newUser);
 
+    console.log("✅ New user saved:", newUser);
     res.status(201).json({ message: "Registration successful!", user: newUser });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
@@ -77,12 +67,10 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ message: 'User not found.' });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid)
-      return res.status(400).json({ message: 'Invalid credentials.' });
+    if (!isValid) return res.status(400).json({ message: 'Invalid credentials.' });
 
     res.json({ message: 'Login successful!', user });
   } catch (err) {
@@ -93,11 +81,12 @@ app.post('/login', async (req, res) => {
 // Reset Password
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
+  if (!email || !newPassword)
+    return res.status(400).json({ message: 'Email and new password required.' });
 
   try {
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ message: 'User not found.' });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
@@ -111,34 +100,7 @@ app.post('/reset-password', async (req, res) => {
 // Post Job
 app.post('/jobs', async (req, res) => {
   try {
-    const {
-      position,
-      company,
-      location,
-      workType,
-      expectedYear,
-      description,
-      vacancies,
-      salary,
-      postedTime,
-      skills,
-      education
-    } = req.body;
-
-    const job = new Job({
-      position,
-      company,
-      location,
-      workType,
-      expectedYear,
-      description,
-      vacancies,
-      salary,
-      postedTime: postedTime || new Date(),
-      skills,
-      education
-    });
-
+    const job = new Job({ ...req.body, postedTime: req.body.postedTime || new Date() });
     await job.save();
     res.status(201).json({ message: "Job posted successfully!", job });
   } catch (err) {
@@ -166,8 +128,6 @@ app.delete('/jobs/:id', async (req, res) => {
   }
 });
 
-// Start Server
+// ✅ Start server
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
