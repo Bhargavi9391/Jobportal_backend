@@ -29,7 +29,6 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
 // ===================== Routes =====================
-// Register User
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -50,10 +49,9 @@ app.post('/register', async (req, res) => {
       isAdmin: false,
     });
 
-    await newUser.save();
+    await newUser.save(); // ✅ This stores the user in MongoDB
 
     res.status(201).json({ message: "Registration successful!", user: newUser });
-
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
   }
