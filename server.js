@@ -46,16 +46,17 @@ app.post('/register', async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      isAdmin: false,
+      isAdmin: false
     });
 
-    await newUser.save(); // ✅ This stores the user in MongoDB
+    await newUser.save(); // ✅ stores user in MongoDB
 
     res.status(201).json({ message: "Registration successful!", user: newUser });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
   }
 });
+
 
 // Login
 app.post('/login', async (req, res) => {
