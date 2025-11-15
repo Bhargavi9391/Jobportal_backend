@@ -16,20 +16,29 @@ const corsOptions = {
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // allow cookies if needed
 };
+
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // handle preflight
+
+// Handle preflight OPTIONS requests
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // =================== Middleware ===================
 app.use(express.json());
 
 // =================== MongoDB Connection ===================
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((err) => console.error("❌ MongoDB connection error:", err.message));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch(err => console.error("❌ MongoDB connection error:", err.message));
 
 // =================== Routes ===================
 
@@ -37,12 +46,15 @@ mongoose.connect(process.env.MONGO_URI, {
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) return res.status(400).json({ message: "All fields are required." });
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Email already registered." });
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword, isAdmin: false });
     await newUser.save();
+
     res.status(201).json({ message: "Registration successful!", user: newUser });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
@@ -53,11 +65,14 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ message: "Email and password required." });
+
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found." });
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(400).json({ message: "Invalid credentials." });
+
     res.json({ message: "Login successful!", user });
   } catch (err) {
     res.status(500).json({ message: "Login failed.", error: err.message });
@@ -68,11 +83,14 @@ app.post('/login', async (req, res) => {
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
   if (!email || !newPassword) return res.status(400).json({ message: "Email and new password required." });
+
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found." });
+
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
+
     res.json({ message: "Password reset successful." });
   } catch (err) {
     res.status(500).json({ message: "Password reset failed.", error: err.message });
