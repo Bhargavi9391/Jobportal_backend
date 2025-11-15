@@ -10,7 +10,7 @@ const app = express();
 
 // ✅ CORS settings
 const allowedOrigins = [
-  "https://frontend-job-4qf6.onrender.com", // your deployed frontend
+ "https://frontend-jobportal-wt9b.onrender.com", // your deployed frontend
   "http://localhost:3000"                   // local frontend
 ];
 
