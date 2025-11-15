@@ -17,6 +17,7 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"],
 }));
 
+
 app.use(express.json());
 
 // ✅ MongoDB Connection (only once)
