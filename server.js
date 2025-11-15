@@ -50,6 +50,7 @@ app.post('/register', async (req, res) => {
     });
 
     await newUser.save(); // ✅ stores user in MongoDB
+    console.log("✅ New user saved:", newUser);
 
     res.status(201).json({ message: "Registration successful!", user: newUser });
   } catch (err) {
