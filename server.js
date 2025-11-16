@@ -16,7 +16,6 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -90,9 +89,7 @@ app.post('/register', async (req, res) => {
     const newUser = new User({ name, email, password: hashedPassword, isAdmin: false });
     await newUser.save();
 
-    // Do not return hashed password in response
     const safeUser = { _id: newUser._id, name: newUser.name, email: newUser.email, isAdmin: newUser.isAdmin };
-
     res.status(201).json({ message: "Registration successful!", user: safeUser });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
@@ -107,20 +104,11 @@ app.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Please provide both email and password.' });
 
   try {
-    // Check Admin (optional simple admin check)
-    // For production, store admin in DB and validate there
+    // simple admin check (keep as-is)
     if (email === "admin@gmail.com" && password === "Admin@123") {
-      const token = jwt.sign(
-        { role: "admin" },
-        JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      return res.json({
-        message: "Login successful!",
-        token,
-        role: "admin"
-      });
+      // create a token that contains role admin (no id)
+      const token = jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: "7d" });
+      return res.json({ message: "Login successful!", token, role: "admin" });
     }
 
     // Normal User
@@ -130,21 +118,10 @@ app.post('/login', async (req, res) => {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(400).json({ message: 'Invalid credentials.' });
 
-    const token = jwt.sign(
-      { id: user._id, role: "user" },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
+    const token = jwt.sign({ id: user._id, role: "user" }, JWT_SECRET, { expiresIn: "7d" });
     const safeUser = { _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin };
 
-    return res.json({
-      message: "Login successful!",
-      token,
-      role: "user",
-      user: safeUser
-    });
-
+    return res.json({ message: "Login successful!", token, role: "user", user: safeUser });
   } catch (err) {
     res.status(500).json({ message: 'Error logging in.', error: err.message });
   }
@@ -169,11 +146,10 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
-// Change Password (for authenticated users) - optional but useful
+// Change Password (for authenticated users)
 app.post('/change-password', authMiddleware, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   try {
-    // If token contains id, use it
     if (!req.user || !req.user.id) return res.status(401).json({ message: "Not allowed." });
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found." });
@@ -189,30 +165,86 @@ app.post('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
-// Post Job (only admin)
+// Post Job (only admin) -- with duplicate prevention & expiry
 app.post('/jobs', authMiddleware, async (req, res) => {
   try {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ message: "Only admin can post jobs." });
     }
 
-    const job = new Job({
-      ...req.body,
-      postedTime: req.body.postedTime || new Date(),
-      postedBy: req.user.id || 'admin' // if admin token doesn't include id, fallback to 'admin'
+    const {
+      position,
+      company,
+      location,
+      workType,
+      expectedYear,
+      description,
+      vacancies,
+      salary,
+      skills,
+      education,
+      expiresInHours, // optional number sent by frontend
+      expiresAt // optional ISO date
+    } = req.body;
+
+    // compute expiresAt if expiresInHours provided
+    let computedExpiresAt = null;
+    if (expiresInHours && !isNaN(Number(expiresInHours))) {
+      computedExpiresAt = new Date(Date.now() + Number(expiresInHours) * 3600 * 1000);
+    } else if (expiresAt) {
+      computedExpiresAt = new Date(expiresAt);
+    }
+
+    // Check duplicate: same position + company and not already expired
+    const existing = await Job.findOne({
+      position: position,
+      company: company,
+      $or: [
+        { expiresAt: { $exists: false } },
+        { expiresAt: null },
+        { expiresAt: { $gt: new Date() } } // still active
+      ]
     });
+
+    if (existing) {
+      return res.status(400).json({ message: "This job is already posted and still active." });
+    }
+
+    const job = new Job({
+      position,
+      company,
+      location,
+      workType,
+      expectedYear,
+      description,
+      vacancies,
+      salary,
+      skills: Array.isArray(skills) ? skills : (skills ? skills.split(",").map(s => s.trim()) : []),
+      education,
+      postedTime: new Date(),
+      expiresAt: computedExpiresAt,
+      postedBy: req.user.id || 'admin'
+    });
+
     await job.save();
+
     res.status(201).json({ message: "Job posted successfully!", job });
   } catch (err) {
     res.status(500).json({ message: "Error posting job.", error: err.message });
   }
 });
 
-// Get Jobs
+// Get Jobs (returns isExpired flag computed server-side optionally)
 app.get('/jobs', async (req, res) => {
   try {
-    const jobs = await Job.find({});
-    res.json(jobs);
+    const jobs = await Job.find({}).sort({ createdAt: -1 }).lean();
+
+    const enhanced = jobs.map(j => {
+      const isExpired = j.expiresAt ? (new Date() > new Date(j.expiresAt)) : false;
+      return { ...j, isExpired };
+    });
+
+    res.json(enhanced);
   } catch (err) {
     res.status(500).json({ message: "Error fetching jobs.", error: err.message });
   }
@@ -224,8 +256,10 @@ app.delete('/jobs/:id', authMiddleware, async (req, res) => {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ message: "Only admin can delete jobs." });
     }
-    await Job.findByIdAndDelete(req.params.id);
-    res.json({ message: "Job deleted successfully!" });
+    const id = req.params.id;
+    const deleted = await Job.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ message: "Job not found." });
+    res.json({ message: "Job deleted successfully!", id });
   } catch (err) {
     res.status(500).json({ message: "Error deleting job.", error: err.message });
   }
