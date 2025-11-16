@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors = require('cors'); // ✅ Add this
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Job = require('./models/Job');
@@ -10,11 +10,11 @@ const app = express();
 
 // ✅ CORS settings
 const allowedOrigins = [
- "https://frontend-jobportal-wt9b.onrender.com", // your deployed frontend
-  "http://localhost:3000"                   // local frontend
+  "https://frontend-jobportal-wt9b.onrender.com", // deployed frontend
+  "http://localhost:3000"                          // local dev
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -23,9 +23,12 @@ app.use(cors({
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-}));
-app.options("*", cors()); // preflight
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // handle preflight
 
 app.use(express.json());
 
