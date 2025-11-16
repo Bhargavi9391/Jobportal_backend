@@ -2,9 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const jwt = require("jsonwebtoken");
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Job = require('./models/Job');
+
 
 const app = express();
 
@@ -64,17 +66,46 @@ app.post('/register', async (req, res) => {
 // Login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password)
     return res.status(400).json({ message: 'Please provide both email and password.' });
 
   try {
+    // Check Admin
+    if (email === "admin@gmail.com" && password === "Admin@123") {
+      const token = jwt.sign(
+        { role: "admin" },
+        process.env.JWT_SECRET || "secret123",
+        { expiresIn: "7d" }
+      );
+
+      return res.json({
+        message: "Login successful!",
+        token,
+        role: "admin"
+      });
+    }
+
+    // Normal User
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(400).json({ message: 'Invalid credentials.' });
 
-    res.json({ message: 'Login successful!', user });
+    const token = jwt.sign(
+      { id: user._id, role: "user" },
+      process.env.JWT_SECRET || "secret123",
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      message: "Login successful!",
+      token,
+      role: "user",
+      user
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Error logging in.', error: err.message });
   }
