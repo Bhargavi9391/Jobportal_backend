@@ -10,10 +10,9 @@ const app = express();
 
 // ================= CORS Setup =================
 const allowedOrigins = [
-  "https://frontend-jobportal-wt9b.onrender.com", // deployed frontend
-  "http://localhost:3000"                          // local dev
+  "https://frontend-jobportal-wt9b.onrender.com",
+  "http://localhost:3000"
 ];
-
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
