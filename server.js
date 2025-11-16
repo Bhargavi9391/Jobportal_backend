@@ -113,28 +113,45 @@ app.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Please provide both email and password.' });
 
   try {
-    // Admin login
+    // Check Admin
     if (email === "admin@gmail.com" && password === "Admin@123") {
-      const token = jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ message: "Login successful!", token, role: "admin" });
+      const token = jwt.sign(
+        { role: "admin" },
+        process.env.JWT_SECRET || "secret123",
+        { expiresIn: "7d" }
+      );
+
+      return res.json({
+        message: "Login successful!",
+        token,
+        role: "admin"
+      });
     }
 
-    // User login
+    // Normal User
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(400).json({ message: 'Invalid credentials.' });
 
-    const token = jwt.sign({ id: user._id, role: "user" }, JWT_SECRET, { expiresIn: "7d" });
-    const safeUser = { _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin };
+    const token = jwt.sign(
+      { id: user._id, role: "user" },
+      process.env.JWT_SECRET || "secret123",
+      { expiresIn: "7d" }
+    );
 
-    return res.json({ message: "Login successful!", token, role: "user", user: safeUser });
+    return res.json({
+      message: "Login successful!",
+      token,
+      role: "user",
+      user
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Error logging in.', error: err.message });
   }
 });
-
 // --- Reset Password ---
 app.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
