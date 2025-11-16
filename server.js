@@ -7,7 +7,6 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Job = require('./models/Job');
 
-
 const app = express();
 
 // ================= CORS Setup =================
@@ -21,7 +20,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, false); // reject unknown origins safely
+      callback(new Error("Not allowed by CORS"), false);
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -40,6 +39,40 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
+// ================= Auth middleware & helper =================
+const JWT_SECRET = process.env.JWT_SECRET || "secret123";
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: "No token provided." });
+
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer")
+    return res.status(401).json({ message: "Invalid Authorization format. Use: Bearer <token>" });
+
+  const token = parts[1];
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ message: "Invalid or expired token." });
+    req.user = decoded; // decoded may contain { id, role } or { role: 'admin' }
+    next();
+  });
+}
+
+// --- route: validate token & return user info (used by frontend on load) ---
+app.get('/me', authMiddleware, async (req, res) => {
+  try {
+    if (req.user && req.user.id) {
+      const user = await User.findById(req.user.id).select('-password');
+      if (!user) return res.status(404).json({ message: 'User not found.' });
+      return res.json({ authenticated: true, role: req.user.role || (user.isAdmin ? 'admin' : 'user'), user });
+    }
+    // Token only has role (e.g. admin-only token)
+    return res.json({ authenticated: true, role: req.user.role || 'admin' });
+  } catch (err) {
+    res.status(500).json({ message: 'Token verify failed.', error: err.message });
+  }
+});
+
 // ================= Routes ==================
 
 // Register
@@ -57,7 +90,10 @@ app.post('/register', async (req, res) => {
     const newUser = new User({ name, email, password: hashedPassword, isAdmin: false });
     await newUser.save();
 
-    res.status(201).json({ message: "Registration successful!", user: newUser });
+    // Do not return hashed password in response
+    const safeUser = { _id: newUser._id, name: newUser.name, email: newUser.email, isAdmin: newUser.isAdmin };
+
+    res.status(201).json({ message: "Registration successful!", user: safeUser });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
   }
@@ -71,11 +107,12 @@ app.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Please provide both email and password.' });
 
   try {
-    // Check Admin
+    // Check Admin (optional simple admin check)
+    // For production, store admin in DB and validate there
     if (email === "admin@gmail.com" && password === "Admin@123") {
       const token = jwt.sign(
         { role: "admin" },
-        process.env.JWT_SECRET || "secret123",
+        JWT_SECRET,
         { expiresIn: "7d" }
       );
 
@@ -95,15 +132,17 @@ app.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: "user" },
-      process.env.JWT_SECRET || "secret123",
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
+
+    const safeUser = { _id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin };
 
     return res.json({
       message: "Login successful!",
       token,
       role: "user",
-      user
+      user: safeUser
     });
 
   } catch (err) {
@@ -130,10 +169,38 @@ app.post('/reset-password', async (req, res) => {
   }
 });
 
-// Post Job
-app.post('/jobs', async (req, res) => {
+// Change Password (for authenticated users) - optional but useful
+app.post('/change-password', authMiddleware, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
   try {
-    const job = new Job({ ...req.body, postedTime: req.body.postedTime || new Date() });
+    // If token contains id, use it
+    if (!req.user || !req.user.id) return res.status(401).json({ message: "Not allowed." });
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Old password is incorrect." });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: "Password changed successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Error updating password", error: err.message });
+  }
+});
+
+// Post Job (only admin)
+app.post('/jobs', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Only admin can post jobs." });
+    }
+
+    const job = new Job({
+      ...req.body,
+      postedTime: req.body.postedTime || new Date(),
+      postedBy: req.user.id || 'admin' // if admin token doesn't include id, fallback to 'admin'
+    });
     await job.save();
     res.status(201).json({ message: "Job posted successfully!", job });
   } catch (err) {
@@ -151,9 +218,12 @@ app.get('/jobs', async (req, res) => {
   }
 });
 
-// Delete Job
-app.delete('/jobs/:id', async (req, res) => {
+// Delete Job (admin only)
+app.delete('/jobs/:id', authMiddleware, async (req, res) => {
   try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Only admin can delete jobs." });
+    }
     await Job.findByIdAndDelete(req.params.id);
     res.json({ message: "Job deleted successfully!" });
   } catch (err) {
