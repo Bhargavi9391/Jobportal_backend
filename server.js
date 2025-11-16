@@ -1,38 +1,36 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // ✅ Add this
+const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Job = require('./models/Job');
 
 const app = express();
 
-// ✅ CORS settings
+// ================= CORS Setup =================
 const allowedOrigins = [
   "https://frontend-jobportal-wt9b.onrender.com", // deployed frontend
   "http://localhost:3000"                          // local dev
 ];
 
-const corsOptions = {
+app.use(cors({
   origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(null, false); // reject unknown origins safely
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-};
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // handle preflight
+app.use(express.json()); // parse JSON requests
 
-app.use(express.json());
-
-// ✅ MongoDB Connection
+// ================= MongoDB Connection =================
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -132,6 +130,6 @@ app.delete('/jobs/:id', async (req, res) => {
   }
 });
 
-// ✅ Start server
+// ================= Start Server =================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
